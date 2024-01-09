@@ -12,7 +12,7 @@ If our code is used in your project, please cite our paper.
 
 ### **1.2 Related video**
 
-Our accompanying videos are now available on **YouTube** (click below images to open) and [**Bilibili**](xxx).
+Our accompanying videos are now available on **YouTube** (click below images to open) and [**Bilibili**](https://www.bilibili.com/video/BV1ke411i7t7/?share_source=copy_web).
 
 <div align="center">
 <a href="https://www.youtube.com/watch?v=SYaig2eHV5I" target="_blank"><img src="img/cover.bmp" alt="video" width="60%" /></a>
