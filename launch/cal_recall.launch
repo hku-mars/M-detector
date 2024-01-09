@@ -1,0 +1,17 @@
+<launch>
+<!-- Launch file for Livox AVIA LiDAR -->
+
+	<arg name="rviz" default="false" />
+
+	<rosparam command="load" file="$(find m_detector)/config/kitti/kitti.yaml" />
+
+	<node pkg="m_detector" type="cal_recall" name="cal_recall" output="screen" />
+
+launch-prefix="gdb -ex run --args"
+	<group if="$(arg rviz)">
+	<node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find m_detector)/rviz/display.rviz" />
+	</group>
+ 
+  	  
+
+</launch>

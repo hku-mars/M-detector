@@ -1,0 +1,19 @@
+<launch>
+
+	<arg name="rviz" default="true" />
+
+	<rosparam command="load" file="$(find m_detector)/config/kitti/kitti.yaml" />
+	<arg name="pred_file" default=""/>	
+	<arg name="pc_file" default=""/>	
+	<arg name="pc_topic" default=""/>	
+
+
+	<node pkg="m_detector" type="display_prediction" name="display_prediction" output="screen" />
+
+	<group if="$(arg rviz)">
+	<node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find m_detector)/rviz/display.rviz" />
+	</group>
+ 
+  	  
+
+</launch>

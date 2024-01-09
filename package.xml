@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<package>
+  <name>m_detector</name>
+  <version>0.0.0</version>
+
+  <description>
+    This is a implemented version of M-detector which is original algorithm
+    is described in the following paper:
+        Moving Event Detection from LiDAR Point Streams.
+  </description>
+
+  <maintainer email="wu2020@connect.hku.hk">HuajieWu</maintainer>
+  
+  <license>GNUv2</license>
+
+  <author email="wu2020@connect.hku.hk">HuajieWu</author>
+  <author email="yhangli@connect.hku.hk">YihangLi</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>livox_ros_driver</build_depend>
+  <build_depend>message_generation</build_depend>
+
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>pcl_ros</run_depend>
+  <run_depend>livox_ros_driver</run_depend>
+  <run_depend>message_runtime</run_depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>rosbag</test_depend>
+
+  <export>
+  </export>
+</package>
