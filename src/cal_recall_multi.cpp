@@ -718,7 +718,7 @@ void KittiCalRecall(std::vector<float> &recalls_vehicle, std::vector<float> &rec
         }
     }
     
-    recall_rec << total_tp << " " << total_fp << " "  << total_fn << " " << total_tn << " ";
+    recall_rec << total_tp << " " << total_fp << " "  << total_fn << " " << total_tn << " " << ((float)total_tp)/(float)(total_tp+total_fn+total_fp) << " " ;
     for(int i = 0; i < class_recalls.size(); i++)
     {
         recall_rec << class_recalls[i] << " " << class_nums[i] << " " << class_var[i] << " ";

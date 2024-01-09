@@ -4,7 +4,7 @@ dyn_obj:
     frame_id: "camera_init"
     pc_topic: "/velodyne_points"
 
-    dataset: 0 #0 for kitti, 1 for nuscenes, 2 for waymo
+    dataset: 0 #0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia
     use_odom_file: true
     stop_object_detect: false
     buffer_delay: 0.1

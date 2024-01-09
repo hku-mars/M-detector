@@ -10,7 +10,7 @@
 	<arg name="cluster_out_file" default=""/>
 	<arg name="time_breakdown_file" default=""/>
 
-	<rosparam command="load" file="$(find m_detector)/config/kitti/kitti7.yaml" />
+	<rosparam command="load" file="$(find m_detector)/config/kitti/kitti1.yaml" />
 	<param name="dyn_obj/out_file" type="string" value="$(arg out_path)" />
 	<param name="dyn_obj/out_file_origin" type="string" value="$(arg out_origin_path)" />
 	<param name="dyn_obj/time_file" type="string" value="$(arg time_file)" />

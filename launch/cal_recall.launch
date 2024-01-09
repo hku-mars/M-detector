@@ -3,7 +3,23 @@
 
 	<arg name="rviz" default="false" />
 
-	<rosparam command="load" file="$(find m_detector)/config/kitti/kitti.yaml" />
+	<!-- <rosparam command="load" file="$(find m_detector)/config/kitti/kitti.yaml" /> -->
+	<arg name="dataset" default=""/>	
+	<arg name="dataset_folder" default=""/>	
+	<arg name="start_param" default="-1"/>	
+	<arg name="end_param" default="-1"/>
+	<arg name="start_se" default="-1"/>
+	<arg name="end_se" default="-1"/>
+	<arg name="is_origin" default="false"/>
+
+	<param name="dyn_obj/dataset" type="int" value="$(arg dataset)" />
+	<param name="dyn_obj/dataset_folder" type="string" value="$(arg dataset_folder)" />
+	<param name="dyn_obj/start_param" type="int" value="$(arg start_param)" />
+	<param name="dyn_obj/end_param" type="int" value="$(arg end_param)" />
+	<param name="dyn_obj/start_se" type="int" value="$(arg start_se)" />
+	<param name="dyn_obj/end_se" type="int" value="$(arg end_se)" />
+	<param name="dyn_obj/is_origin" type="bool" value="$(arg is_origin)" />
+
 
 	<node pkg="m_detector" type="cal_recall" name="cal_recall" output="screen" />
 

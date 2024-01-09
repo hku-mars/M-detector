@@ -4,7 +4,7 @@ dyn_obj:
     frame_id: "camera_init"
     pc_topic: "/lidar_top"
     
-    dataset: 1 #0 for kitti, 1 for nuscenes, 2 for waymo
+    dataset: 1 #0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia
     buffer_delay: 0.1
     buffer_size: 500000
     points_num_perframe: 50000

@@ -4,12 +4,12 @@ dyn_obj:
     frame_id: "camera_init"
     pc_topic: "/velodyne_points"
 
-    dataset: 2 #0 for kitti, 1 for nuscenes, 2 for waymo
+    dataset: 2 #0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia
     buffer_delay: 0.1
     buffer_size: 500000
     points_num_perframe: 200000
     depth_map_dur: 0.2
-    max_depth_map_num: 5
+    max_depth_map_num: 10
     max_pixel_points: 5
     frame_dur: 0.1
     self_x_f: 0.5
@@ -93,7 +93,7 @@ dyn_obj:
     cluster_extend_pixel: 2
     cluster_min_pixel_number: 3
     cluster_Voxel_revolusion: 0.3
-    
+
 
     dyn_filter_en: false
     debug_publish: false

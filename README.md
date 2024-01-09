@@ -141,11 +141,15 @@ Then:
 
 ### 5.2 Generate the label files for every point
 
-`roslaunch m_detector detector_odom.launch out_path:="your path for frame-out results" out_origin_path:="your path for point-out results"`
+`roslaunch m_detector detector_XXX.launch out_path:="your path for frame-out results" out_origin_path:="your path for point-out results"`
+
+Note: Follow the folder structure introduced before, the `out_path` should be in the format of "(the path to dataset folder)/(dataset name)/sequences/(sequence number)/predictionsx(x is the parameter file's number)/", and the `out_origin_path` should be in the format of "(the path to dataset folder)/(dataset name)/sequences/(sequence number)/predictionsx_origin(x is the parameter file's number)/".
 
 ### 5.3 Calculate the IoU of results
 
-`roslaunch m_detector cal_recall.launch`
+`roslaunch m_detector cal_recall.launch dataset:=(0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia) dataset_folder:="the path to the dataset_folder" start_se:=(the first sequence number for calculation) end_se:=(the last sequence number for calculation) start_param:=(the first parameter file's number for calculation) end_param:=(the last parameter file's number for calculation) is_origin:=(true for point-out results, false for frame-out results)`
+
+Note: Follow the folder structure introduced before, the `dataset_folder` should be the path to dataset folder. This step will calculate all the IoU for all designated results listed in the dataset folder and generate a new folder named "recall" or "recall_origin" containing the results.
 
 ## 6. Run with Embedded in FAST LIO
 

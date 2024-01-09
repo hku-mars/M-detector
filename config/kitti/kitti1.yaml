@@ -4,15 +4,15 @@ dyn_obj:
     frame_id: "camera_init"
     pc_topic: "/velodyne_points"
 
-    dataset: 0 #0 for kitti, 1 for nuscenes, 2 for waymo
+    dataset: 0 #0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia
     use_odom_file: true
     stop_object_detect: false
     buffer_delay: 0.1
     buffer_size: 300000
     points_num_perframe: 150000
     depth_map_dur: 0.1
-    max_depth_map_num: 15
-    max_pixel_points: 5
+    max_depth_map_num: 7
+    max_pixel_points: 50
     frame_dur: 0.1
     self_x_f: 2.5
     self_x_b: -1.5
@@ -27,9 +27,9 @@ dyn_obj:
     checkneighbor_range: 1
     
     depth_thr1: 0.15
-    enter_min_thr1: 0.5 # kill car front points (close to wall, related to view change)
-    enter_max_thr1: 0.15 # equal to map_cons_depth_thr1, for save pedestrain close to wall
-    map_cons_depth_thr1: 0.15
+    enter_min_thr1: 1.0 # kill car front points (close to wall, related to view change)
+    enter_max_thr1: 0.3 # equal to map_cons_depth_thr1, for save pedestrain close to wall
+    map_cons_depth_thr1: 0.3
     map_cons_hor_thr1: 0.01
     map_cons_ver_thr1: 0.015
     map_cons_hor_dis1: 0.15
@@ -97,10 +97,10 @@ dyn_obj:
     cluster_min_pixel_number: 8
     cluster_thrustable_thresold: 0.3
     cluster_Voxel_revolusion: 0.3
-    
+
     dyn_filter_en: false
     debug_publish: false
-   
+    
     ver_resolution_max: 0.007
     hor_resolution_max: 0.005
     

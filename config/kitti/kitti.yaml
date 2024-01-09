@@ -4,7 +4,7 @@ dyn_obj:
     frame_id: "camera_init"
     pc_topic: "/velodyne_points"
 
-    dataset: 0 #0 for kitti, 1 for nuscenes, 2 for waymo
+    dataset: 0 #0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia
     use_odom_file: true
     stop_object_detect: true
     buffer_delay: 0.1
@@ -106,12 +106,12 @@ dyn_obj:
     ver_resolution_max: 0.007
     hor_resolution_max: 0.005
 
-    dataset_folder: "/home/huajie/event_detection/test_open/kitti/"
-    start_param: 0
-    end_param: 1
-    start_se: 0
-    end_se: 1
-    is_origin: false
+    # dataset_folder: "/home/huajie/event_detection/test_open/kitti/"
+    # start_param: 0
+    # end_param: 1
+    # start_se: 0
+    # end_se: 1
+    # is_origin: false
 
 
     
