@@ -11,8 +11,8 @@ dyn_obj:
     buffer_size: 300000
     points_num_perframe: 150000
     depth_map_dur: 0.1
-    max_depth_map_num: 9
-    max_pixel_points: 5
+    max_depth_map_num: 7
+    max_pixel_points: 50
     frame_dur: 0.1
     self_x_f: 2.5
     self_x_b: -1.5
@@ -97,7 +97,7 @@ dyn_obj:
     cluster_min_pixel_number: 8
     cluster_thrustable_thresold: 0.3
     cluster_Voxel_revolusion: 0.3
-    
+
     dyn_filter_en: false
     debug_publish: false
     

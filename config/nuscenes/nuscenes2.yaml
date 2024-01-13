@@ -9,8 +9,8 @@ dyn_obj:
     buffer_size: 500000
     points_num_perframe: 50000
     depth_map_dur: 0.2
-    max_depth_map_num: 10
-    max_pixel_points: 50
+    max_depth_map_num: 5
+    max_pixel_points: 5
     frame_dur: 0.05
     self_x_f: 2.2
     self_x_b: -1.2
@@ -98,8 +98,8 @@ dyn_obj:
 
     dyn_filter_en: false
     debug_publish: false
-
-
+    
+   
     ver_resolution_max: 0.022 
     hor_resolution_max: 0.007 
     

@@ -38,7 +38,7 @@ dyn_obj:
     enlarge_z_thr1 : -2.5
     enlarge_angle: 2.0
     enlarge_depth: 3.0
-    occluded_map_thr1: 3
+    occluded_map_thr1: 2
     case1_interp_en: false
 
     v_min_thr2: 0.5
@@ -53,7 +53,7 @@ dyn_obj:
     depth_cons_depth_max_thr2: 0.5
     depth_cons_hor_thr2: 0.01
     depth_cons_ver_thr2: 0.01
-    occluded_times_thr2: 3
+    occluded_times_thr2: 2
     k_depth2: 0.005
     case2_interp_en: false
 
@@ -69,7 +69,7 @@ dyn_obj:
     depth_cons_depth_max_thr3: 1.0
     depth_cons_hor_thr3: 0.01
     depth_cons_ver_thr3: 0.01
-    occluding_times_thr3: 3
+    occluding_times_thr3: 2
     case3_interp_en: false
 
     interp_hor_thr: 0.015
@@ -89,17 +89,16 @@ dyn_obj:
     debug_z: -0.89005
     cluster_coupled: true
     cluster_future: true
-    cluster_extend_pixel: 5
-    cluster_min_pixel_number: 2
-    cluster_thrustable_thresold: 0.1
+    cluster_extend_pixel: 2
+    cluster_min_pixel_number: 3
+    cluster_thrustable_thresold: 0.3
     cluster_Voxel_revolusion: 0.3
 
+    
 
-
-    dyn_filter_en: true
+    dyn_filter_en: false
     debug_publish: false
     
- 
+
     ver_resolution_max: 0.005
     hor_resolution_max: 0.005
-

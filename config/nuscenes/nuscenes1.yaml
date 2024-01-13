@@ -3,7 +3,7 @@ dyn_obj:
     odom_topic: "/aft_mapped_to_init"
     frame_id: "camera_init"
     pc_topic: "/lidar_top"
-
+    
     dataset: 1 #0 for kitti, 1 for nuscenes, 2 for waymo, 3 for avia
     buffer_delay: 0.1
     buffer_size: 500000
@@ -38,7 +38,7 @@ dyn_obj:
     enlarge_z_thr1 : -2.5
     enlarge_angle: 2.0
     enlarge_depth: 3.0
-    occluded_map_thr1: 2
+    occluded_map_thr1: 1
     case1_interp_en: true
 
     v_min_thr2: 1.0
@@ -94,12 +94,12 @@ dyn_obj:
     cluster_min_pixel_number: 3
     cluster_Voxel_revolusion: 0.3
 
-    
+
 
     dyn_filter_en: false
     debug_publish: false
     
-   
+    
     ver_resolution_max: 0.022 
-    hor_resolution_max: 0.007 
+    hor_resolution_max: 0.007
     
