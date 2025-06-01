@@ -70,6 +70,7 @@ Install gcc-9 g++-9
 
 Follow [[TBB Installation](https://solarianprogrammer.com/2019/05/09/cpp-17-stl-parallel-algorithms-gcc-intel-tbb-linux-macos/)] (**Note:** change the gcc-9.1/g++-9.1 to gcc-9/g++-9)
 
+Change the TBB path (line 51-52) in CMakeLists.txt
 ## 3. Build
 
 Clone the repository and catkin_make:
@@ -88,16 +89,27 @@ Clone the repository and catkin_make:
 ### 4.1 Key parameters
 
 ```
-dataset: 3    #0 for kitti, 1 for nuscenes, 2 for waymo
-buffer_delay: 0.1
-buffer_size: 100000
-points_num_perframe: 30000
-depth_map_dur: 0.2
-max_depth_map_num: 5
-max_pixel_points: 5
-frame_dur: 0.1
-hor_resolution_max: 0.005
-ver_resolution_max: 0.01
+points_topic: "/cloud_registered_body"  #the topic name of local point cloud
+odom_topic: "/aft_mapped_to_init"       #the topic name of odometry
+dataset: 3                              #0 for kitti, 1 for nuscenes, 2 for waymo
+buffer_delay: 0.1                       #the delay duration between the frame-out output and depth map construction
+buffer_size: 100000                     #the saved maximum point numbers in the buffer, usually larger than the point numbers generated during buffer_delay
+points_num_perframe: 30000              #the maximum point numbers LiDAR generated per frame
+depth_map_dur: 0.2                      #the effective durtaion of every depth map 
+max_depth_map_num: 5                    #the maximum depth map numbers in the configuration 
+max_pixel_points: 5                     #the saved maximum point numbers in each pixel of the depth map
+frame_dur: 0.1                          #the frame duration of the point cloud input by points_topic
+hor_resolution_max: 0.005               #the horizontal resolution of the depth map (units in radius), usually is 2-4 times of the horizontal resolution of LiDAR
+ver_resolution_max: 0.01                #the vertical resolution of the depth map (units in radius),  usually is 2-4 times of the horizontal resolution of LiDAR
+fov_up: 52                              #the maximum value of the vertical FOV of LiDAR
+fov_down: -7                            #the minimum value of the vertical FOV of LiDAR
+fov_left: 180.0                         #the maximum value of the horizontal FOV of LiDAR
+fov_right: -180.0                       #the minimum value of the horizontal FOV of LiDAR
+occluded_map_thr1:3                     #the minimum occlusion times for test 1
+map_cons_hor_thr1: 0.05                 #the horizontal neighborhood size for occlusion check in the step of map consistency for test 1
+map_cons_ver_thr1: 0.05                 #the vertical neighborhood size for occlusion check in the step of map consistency for test 1
+cluster_coupled:true                    #whether output the frame-out results
+cluster_future:true                     #whether utilize the frame-out results during depth map construction
 ```
 
 The parameters are provided in folder "config" for different LiDARs.
@@ -162,6 +174,8 @@ Download the embedded version provided in Releases into a new workspace and comp
 ## 7. Rosbag Download
 
 The bags used in paper can be download at [[this link](https://drive.google.com/drive/folders/1ASNfrjZB7n9Q-nB4Pm2IwvArFWnTcFAj?usp=sharing)].
+
+
 
 ## 8. License
 
