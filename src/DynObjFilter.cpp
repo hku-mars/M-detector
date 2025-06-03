@@ -107,8 +107,8 @@ void  DynObjFilter::init(ros::NodeHandle& nh)
     nh.param<float>("dyn_obj/cluster_Voxel_revolusion", Cluster.Voxel_revolusion, 0.3f);
     nh.param<bool>("dyn_obj/cluster_debug_en", Cluster.debug_en, false);
     nh.param<string>("dyn_obj/cluster_out_file", Cluster.out_file, "");
-    nh.param<float>("dyn_obj/ver_resolution_max", hor_resolution_max, 0.0025f);
-    nh.param<float>("dyn_obj/hor_resolution_max", ver_resolution_max, 0.0025f);
+    nh.param<float>("dyn_obj/ver_resolution_max", ver_resolution_max, 0.0025f);
+    nh.param<float>("dyn_obj/hor_resolution_max", hor_resolution_max, 0.0025f);
     nh.param<float>("dyn_obj/buffer_dur", buffer_dur, 0.1f);
     nh.param<int>("dyn_obj/point_index", point_index, 0);
     nh.param<string>("dyn_obj/frame_id", frame_id, "camera_init");
