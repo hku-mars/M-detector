@@ -43,12 +43,23 @@ Eigen    ≥ 3.3.4
 
 ### 2.3 **livox_ros_driver**
 
-Follow [livox_ros_driver Installation](https://github.com/Livox-SDK/livox_ros_driver).
+Livox support is enabled by default to preserve existing behavior. When it is enabled, install [livox_ros_driver v1](https://github.com/Livox-SDK/livox_ros_driver) and source its workspace before configuring M-Detector. If the driver cannot be found, configuration fails with instructions for either sourcing it or disabling Livox support.
 
-*Remarks:*
+For a non-Livox build, set both the environment variable used by the package manifest and the CMake option consistently:
 
-* Since the M-detector support Livox serials LiDAR firstly, so the **livox_ros_driver** must be installed and **sourced** before run any M-detector launch file.
-* How to source? The easiest way is add the line `source $Livox_ros_driver_dir$/devel/setup.bash` to the end of file `~/.bashrc`, where `$Livox_ros_driver_dir$` is the directory of the livox ros driver workspace (should be the `ws_livox` directory if you completely followed the livox official document).
+```bash
+export MDETECTOR_ENABLE_LIVOX=0
+catkin_make -DMDETECTOR_ENABLE_LIVOX=OFF
+```
+
+To enable Livox explicitly, use `MDETECTOR_ENABLE_LIVOX=1` with `-DMDETECTOR_ENABLE_LIVOX=ON`. The environment variable may be unset, `0`, or `1`; configuration rejects invalid values and environment/CMake disagreements.
+
+| Configuration | Behavior |
+| --- | --- |
+| ON + driver available | Builds with Livox `CustomMsg` support |
+| ON + driver unavailable | Fails configuration with an actionable message |
+| OFF + driver unavailable | Builds all executables without Livox |
+| OFF + `/livox/lidar` | Exits at startup with a fatal error |
 
 ### 2.4 TBB
 

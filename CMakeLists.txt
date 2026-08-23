@@ -47,7 +47,27 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
 find_package(PythonLibs REQUIRED)
 # find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
-find_package(catkin REQUIRED COMPONENTS
+set(MDETECTOR_ENABLE_LIVOX_DEFAULT ON)
+if(DEFINED ENV{MDETECTOR_ENABLE_LIVOX})
+  set(MDETECTOR_ENABLE_LIVOX_ENV "$ENV{MDETECTOR_ENABLE_LIVOX}")
+  if(MDETECTOR_ENABLE_LIVOX_ENV STREQUAL "0")
+    set(MDETECTOR_ENABLE_LIVOX_DEFAULT OFF)
+  elseif(MDETECTOR_ENABLE_LIVOX_ENV STREQUAL "1")
+    set(MDETECTOR_ENABLE_LIVOX_DEFAULT ON)
+  else()
+    message(FATAL_ERROR "MDETECTOR_ENABLE_LIVOX environment variable must be 0 or 1")
+  endif()
+endif()
+option(MDETECTOR_ENABLE_LIVOX "Build Livox CustomMsg support" ${MDETECTOR_ENABLE_LIVOX_DEFAULT})
+
+if(DEFINED ENV{MDETECTOR_ENABLE_LIVOX})
+  if((MDETECTOR_ENABLE_LIVOX_ENV STREQUAL "0" AND MDETECTOR_ENABLE_LIVOX) OR
+     (MDETECTOR_ENABLE_LIVOX_ENV STREQUAL "1" AND NOT MDETECTOR_ENABLE_LIVOX))
+    message(FATAL_ERROR "MDETECTOR_ENABLE_LIVOX environment variable and CMake option disagree")
+  endif()
+endif()
+
+set(MDETECTOR_CATKIN_COMPONENTS
   geometry_msgs
   nav_msgs
   sensor_msgs
@@ -56,10 +76,19 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   pcl_ros
   tf
-  livox_ros_driver
   message_generation
   eigen_conversions
 )
+if(MDETECTOR_ENABLE_LIVOX)
+  find_package(livox_ros_driver QUIET)
+  if(NOT livox_ros_driver_FOUND)
+    message(FATAL_ERROR
+      "MDETECTOR_ENABLE_LIVOX=ON requires livox_ros_driver v1. Source its workspace, "
+      "or set MDETECTOR_ENABLE_LIVOX=0 and configure with -DMDETECTOR_ENABLE_LIVOX=OFF.")
+  endif()
+  list(APPEND MDETECTOR_CATKIN_COMPONENTS livox_ros_driver)
+endif()
+find_package(catkin REQUIRED COMPONENTS ${MDETECTOR_CATKIN_COMPONENTS})
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.8 REQUIRED)
@@ -92,6 +121,9 @@ target_link_libraries(dynfilter ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LI
 target_include_directories(dynfilter PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 add_executable(display_prediction src/display_prediction.cpp )
+if(MDETECTOR_ENABLE_LIVOX)
+  target_compile_definitions(display_prediction PRIVATE MDETECTOR_ENABLE_LIVOX)
+endif()
 target_link_libraries(display_prediction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
 target_include_directories(display_prediction PRIVATE ${PYTHON_INCLUDE_DIRS})
 

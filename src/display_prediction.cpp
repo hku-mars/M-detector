@@ -29,7 +29,9 @@
 #include <unistd.h> 
 #include <dirent.h> 
 #include <iomanip>
+#ifdef MDETECTOR_ENABLE_LIVOX
 #include <livox_ros_driver/CustomMsg.h>
+#endif
 
 using namespace std;
 
@@ -179,6 +181,7 @@ void PointsCallback(const sensor_msgs::PointCloud2ConstPtr& msg_in)
 }
 
 
+#ifdef MDETECTOR_ENABLE_LIVOX
 void AviaPointsCallback(const livox_ros_driver::CustomMsg::ConstPtr &msg_in)
 {   
     PointCloudXYZI::Ptr points_in(new PointCloudXYZI());
@@ -316,6 +319,7 @@ void AviaPointsCallback(const livox_ros_driver::CustomMsg::ConstPtr &msg_in)
     
 }
 
+#endif
 
 
 int main(int argc, char** argv)
@@ -356,7 +360,12 @@ int main(int argc, char** argv)
     ros::Subscriber sub_pcl;
     if(points_topic == "/livox/lidar")
     {
+#ifdef MDETECTOR_ENABLE_LIVOX
         sub_pcl = nh.subscribe(points_topic, 200000, AviaPointsCallback);
+#else
+        ROS_FATAL("Livox input requested, but M-Detector was built with MDETECTOR_ENABLE_LIVOX=OFF");
+        return EXIT_FAILURE;
+#endif
     }
     else
     {
