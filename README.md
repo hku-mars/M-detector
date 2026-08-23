@@ -27,9 +27,9 @@ The codes of this repo are contributed by:
 
 ### 2.1 **Ubuntu** and **ROS**
 
-Ubuntu ≥ 18.04.
+The build changes documented here were tested on Ubuntu 20.04 with ROS Noetic, CMake 3.16, GCC 9.4, and TBB 2020.1. Ubuntu 18.04 and ROS Melodic were not tested as part of this change.
 
-ROS     ≥ Melodic. Follow [[ROS Installation](http://wiki.ros.org/ROS/Installation)]
+Follow the [ROS installation instructions](http://wiki.ros.org/ROS/Installation) for your environment.
 
 ### 2.2 **PCL** and **Eigen**
 
@@ -52,25 +52,12 @@ Follow [livox_ros_driver Installation](https://github.com/Livox-SDK/livox_ros_dr
 
 ### 2.4 TBB
 
-Install gcc-9 g++-9
+M-Detector uses the C++17 parallel STL and requires a TBB development package that exposes the `TBB::tbb` CMake target. On Ubuntu, install the distro package:
 
-`sudo add-apt-repository ppa:ubuntu-toolchain-r/test`
+`sudo apt install libtbb-dev`
 
-`sudo apt update`
+For a custom TBB installation, pass its package configuration directory with `-DTBB_DIR=/path/to/lib/cmake/TBB`, or add the installation prefix to `CMAKE_PREFIX_PATH`.
 
-`sudo apt install gcc-9 g++-9`
-
-`cd /usr/bin`
-
-`sudo rm gcc g++`
-
-`sudo ln -s gcc-9  gcc`
-
-`sudo ln -s g++-9 g++`
-
-Follow [[TBB Installation](https://solarianprogrammer.com/2019/05/09/cpp-17-stl-parallel-algorithms-gcc-intel-tbb-linux-macos/)] (**Note:** change the gcc-9.1/g++-9.1 to gcc-9/g++-9)
-
-Change the TBB path (line 51-52) in CMakeLists.txt
 ## 3. Build
 
 Clone the repository and catkin_make:
@@ -82,7 +69,6 @@ Clone the repository and catkin_make:
 `catkin_make`
 
 `source devel/setup.bash`
-(**Note:** change the path for TBB in CMakeList.txt)
 
 ## 4. Key Information
 
