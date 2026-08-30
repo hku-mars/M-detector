@@ -27,9 +27,9 @@ The codes of this repo are contributed by:
 
 ### 2.1 **Ubuntu** and **ROS**
 
-Ubuntu ≥ 18.04.
+The build changes documented here were tested on Ubuntu 20.04 with ROS Noetic, CMake 3.16, GCC 9.4, and TBB 2020.1. Ubuntu 18.04 and ROS Melodic were not tested as part of this change.
 
-ROS     ≥ Melodic. Follow [[ROS Installation](http://wiki.ros.org/ROS/Installation)]
+Follow the [ROS installation instructions](http://wiki.ros.org/ROS/Installation) for your environment.
 
 ### 2.2 **PCL** and **Eigen**
 
@@ -43,34 +43,32 @@ Eigen    ≥ 3.3.4
 
 ### 2.3 **livox_ros_driver**
 
-Follow [livox_ros_driver Installation](https://github.com/Livox-SDK/livox_ros_driver).
+Livox support is enabled by default to preserve existing behavior. When it is enabled, install [livox_ros_driver v1](https://github.com/Livox-SDK/livox_ros_driver) and source its workspace before configuring M-Detector. If the driver cannot be found, configuration fails with instructions for either sourcing it or disabling Livox support.
 
-*Remarks:*
+For a non-Livox build, set both the environment variable used by the package manifest and the CMake option consistently:
 
-* Since the M-detector support Livox serials LiDAR firstly, so the **livox_ros_driver** must be installed and **sourced** before run any M-detector launch file.
-* How to source? The easiest way is add the line `source $Livox_ros_driver_dir$/devel/setup.bash` to the end of file `~/.bashrc`, where `$Livox_ros_driver_dir$` is the directory of the livox ros driver workspace (should be the `ws_livox` directory if you completely followed the livox official document).
+```bash
+export MDETECTOR_ENABLE_LIVOX=0
+catkin_make -DMDETECTOR_ENABLE_LIVOX=OFF
+```
+
+To enable Livox explicitly, use `MDETECTOR_ENABLE_LIVOX=1` with `-DMDETECTOR_ENABLE_LIVOX=ON`. The environment variable may be unset, `0`, or `1`; configuration rejects invalid values and environment/CMake disagreements.
+
+| Configuration | Behavior |
+| --- | --- |
+| ON + driver available | Builds with Livox `CustomMsg` support |
+| ON + driver unavailable | Fails configuration with an actionable message |
+| OFF + driver unavailable | Builds all executables without Livox |
+| OFF + `/livox/lidar` | Exits at startup with a fatal error |
 
 ### 2.4 TBB
 
-Install gcc-9 g++-9
+M-Detector uses the C++17 parallel STL and requires a TBB development package that exposes the `TBB::tbb` CMake target. On Ubuntu, install the distro package:
 
-`sudo add-apt-repository ppa:ubuntu-toolchain-r/test`
+`sudo apt install libtbb-dev`
 
-`sudo apt update`
+For a custom TBB installation, pass its package configuration directory with `-DTBB_DIR=/path/to/lib/cmake/TBB`, or add the installation prefix to `CMAKE_PREFIX_PATH`.
 
-`sudo apt install gcc-9 g++-9`
-
-`cd /usr/bin`
-
-`sudo rm gcc g++`
-
-`sudo ln -s gcc-9  gcc`
-
-`sudo ln -s g++-9 g++`
-
-Follow [[TBB Installation](https://solarianprogrammer.com/2019/05/09/cpp-17-stl-parallel-algorithms-gcc-intel-tbb-linux-macos/)] (**Note:** change the gcc-9.1/g++-9.1 to gcc-9/g++-9)
-
-Change the TBB path (line 51-52) in CMakeLists.txt
 ## 3. Build
 
 Clone the repository and catkin_make:
@@ -82,7 +80,6 @@ Clone the repository and catkin_make:
 `catkin_make`
 
 `source devel/setup.bash`
-(**Note:** change the path for TBB in CMakeList.txt)
 
 ## 4. Key Information
 
