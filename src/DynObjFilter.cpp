@@ -1,4 +1,6 @@
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <vector>
 #include <random>
 #include <m-detector/DynObjFilter.h>
@@ -114,7 +116,29 @@ void  DynObjFilter::init(ros::NodeHandle& nh)
     nh.param<string>("dyn_obj/frame_id", frame_id, "camera_init");
     nh.param<string>("dyn_obj/time_file", time_file, "");
     nh.param<string>("dyn_obj/time_breakdown_file",time_breakdown_file, "");
-    max_ind   = floor(3.1415926 * 2 / hor_resolution_max);
+    const int max_supported_depth_maps = std::min(MAP_NUM, HASH_PRIM);
+    if (!m_detector::spatial_index::IsHistoryCapacityValid(
+            max_depth_map_num, MAP_NUM, HASH_PRIM))
+    {
+        ROS_FATAL_STREAM("Invalid dyn_obj/max_depth_map_num=" << max_depth_map_num
+                         << "; supported range is [1, " << max_supported_depth_maps << "]");
+        throw std::invalid_argument("dyn_obj/max_depth_map_num is outside supported history capacity");
+    }
+    if (!std::isfinite(hor_resolution_max) || hor_resolution_max <= 0.0f ||
+        !std::isfinite(ver_resolution_max) || ver_resolution_max <= 0.0f)
+    {
+        ROS_FATAL_STREAM("Invalid effective projection resolutions: horizontal="
+                         << hor_resolution_max << ", vertical=" << ver_resolution_max
+                         << "; both must be finite and positive");
+        throw std::invalid_argument("projection resolutions must be finite and positive");
+    }
+    if (!m_detector::spatial_index::TryFloorIndex(
+            3.1415926 * 2, hor_resolution_max, std::numeric_limits<int>::max(), &max_ind))
+    {
+        ROS_FATAL_STREAM("Effective horizontal projection resolution " << hor_resolution_max
+                         << " produces an unsupported index range");
+        throw std::invalid_argument("horizontal projection resolution is too small");
+    }
     if (pcl_his_list.size() == 0)
     {   
         PointCloudXYZI::Ptr first_frame(new PointCloudXYZI());
@@ -151,11 +175,28 @@ void  DynObjFilter::init(ros::NodeHandle& nh)
     depth_cons_ver_num3 = ceil(depth_cons_ver_thr3/ver_resolution_max);
     buffer.init(buffer_size);
 
-    pixel_fov_up = floor((fov_up/180.0*PI_MATH + 0.5 * PI_MATH)/ver_resolution_max);
-    pixel_fov_down = floor((fov_down/180.0*PI_MATH + 0.5 * PI_MATH)/ver_resolution_max);
-    pixel_fov_cut = floor((fov_cut/180.0*PI_MATH +  0.5 * PI_MATH)/ver_resolution_max);
-    pixel_fov_left = floor((fov_left/180.0*PI_MATH +  PI_MATH)/hor_resolution_max);
-    pixel_fov_right = floor((fov_right/180.0*PI_MATH +  PI_MATH)/hor_resolution_max);
+    if (!m_detector::spatial_index::TryFloorIndex(
+            fov_up/180.0*PI_MATH + 0.5 * PI_MATH, ver_resolution_max,
+            MAX_1D_HALF, &pixel_fov_up) ||
+        !m_detector::spatial_index::TryFloorIndex(
+            fov_down/180.0*PI_MATH + 0.5 * PI_MATH, ver_resolution_max,
+            MAX_1D_HALF, &pixel_fov_down) ||
+        !m_detector::spatial_index::TryFloorIndex(
+            fov_cut/180.0*PI_MATH + 0.5 * PI_MATH, ver_resolution_max,
+            MAX_1D_HALF, &pixel_fov_cut) ||
+        !m_detector::spatial_index::TryFloorIndex(
+            fov_left/180.0*PI_MATH + PI_MATH, hor_resolution_max,
+            MAX_1D, &pixel_fov_left) ||
+        !m_detector::spatial_index::TryFloorIndex(
+            fov_right/180.0*PI_MATH + PI_MATH, hor_resolution_max,
+            MAX_1D, &pixel_fov_right) ||
+        pixel_fov_down > pixel_fov_up || pixel_fov_right > pixel_fov_left)
+    {
+        ROS_FATAL_STREAM("Configured FoV is outside the fixed projection grid: up=" << fov_up
+                         << ", down=" << fov_down << ", left=" << fov_left
+                         << ", right=" << fov_right << ", cut=" << fov_cut);
+        throw std::invalid_argument("configured FoV is outside the fixed projection grid");
+    }
     max_pointers_num = round((max_depth_map_num * depth_map_dur + buffer_delay)/frame_dur) + 1;
     point_soph_pointers.reserve(max_pointers_num);
     for (int i = 0; i < max_pointers_num; i++)
@@ -611,60 +652,64 @@ void  DynObjFilter::Buffer2DepthMap(double cur_time)
                     depth_map_list.push_back(new_map_pointer);
                 }
             }
+            bool insert_point = false;
+            bool update_static_depth = false;
             switch (point->dyn)
             {
-                if(depth_map_list.back()->depth_map.size() <= point->position) 
                 case STATIC:
-                    SphericalProjection(*point, depth_map_list.back()->map_index, depth_map_list.back()->project_R, depth_map_list.back()->project_T, *point);                  
-                    if(depth_map_list.back()->depth_map[point->position].size() < max_pixel_points)
-                    {
-                        depth_map_list.back()->depth_map[point->position].push_back(point);
-                        if (point->vec(2) > depth_map_list.back()->max_depth_all[point->position])  
-                        {
-                            depth_map_list.back()->max_depth_all[point->position] = point->vec(2);
-                            depth_map_list.back()->max_depth_index_all[point->position] = depth_map_list.back()->depth_map[point->position].size()-1;
-                        }
-                        if (point->vec(2) < depth_map_list.back()->min_depth_all[point->position] ||\
-                            depth_map_list.back()->min_depth_all[point->position] < 10E-5)  
-                        {
-                            depth_map_list.back()->min_depth_all[point->position] = point->vec(2);
-                            depth_map_list.back()->min_depth_index_all[point->position] = depth_map_list.back()->depth_map[point->position].size()-1;
-                        }
-                        if (point->vec(2) < depth_map_list.back()->min_depth_static[point->position] ||\
-                            depth_map_list.back()->min_depth_static[point->position] < 10E-5)  
-                        {
-                            depth_map_list.back()->min_depth_static[point->position] = point->vec(2);
-                        }
-                        if (point->vec(2) > depth_map_list.back()->max_depth_static[point->position])  
-                        {
-                            depth_map_list.back()->max_depth_static[point->position] = point->vec(2);
-                        }                        
-                    }
-                    break;   
-                case CASE1:   
-
+                    insert_point = true;
+                    update_static_depth = true;
+                    break;
+                case CASE1:
                 case CASE2:
-
                 case CASE3:
-                    SphericalProjection(*point, depth_map_list.back()->map_index, depth_map_list.back()->project_R, depth_map_list.back()->project_T, *point);
-                    if(depth_map_list.back()->depth_map[point->position].size() < max_pixel_points)
+                    insert_point = true;
+                    break;
+                default:
+                    break;
+            }
+
+            if (insert_point)
+            {
+                DepthMap::Ptr &depth_map = depth_map_list.back();
+                if (!SphericalProjection(*point, depth_map->map_index,
+                                         depth_map->project_R, depth_map->project_T, *point) ||
+                    !m_detector::spatial_index::IsIndexInRange(
+                        point->position, depth_map->depth_map.size()))
+                {
+                    buffer.pop();
+                    continue;
+                }
+
+                std::vector<point_soph*> &pixel = depth_map->depth_map[point->position];
+                if (pixel.size() < max_pixel_points)
+                {
+                    pixel.push_back(point);
+                    const int stored_index = static_cast<int>(pixel.size()) - 1;
+                    if (point->vec(2) > depth_map->max_depth_all[point->position])
                     {
-                        depth_map_list.back()->depth_map[point->position].push_back(point);
-                        if (point->vec(2) > depth_map_list.back()->max_depth_all[point->position])  
+                        depth_map->max_depth_all[point->position] = point->vec(2);
+                        depth_map->max_depth_index_all[point->position] = stored_index;
+                    }
+                    if (point->vec(2) < depth_map->min_depth_all[point->position] ||
+                        depth_map->min_depth_all[point->position] < 10E-5)
+                    {
+                        depth_map->min_depth_all[point->position] = point->vec(2);
+                        depth_map->min_depth_index_all[point->position] = stored_index;
+                    }
+                    if (update_static_depth)
+                    {
+                        if (point->vec(2) < depth_map->min_depth_static[point->position] ||
+                            depth_map->min_depth_static[point->position] < 10E-5)
                         {
-                            depth_map_list.back()->max_depth_all[point->position] = point->vec(2);
-                            depth_map_list.back()->max_depth_index_all[point->position] = depth_map_list.back()->depth_map[point->position].size()-1;
+                            depth_map->min_depth_static[point->position] = point->vec(2);
                         }
-                        if (point->vec(2) < depth_map_list.back()->min_depth_all[point->position] ||\
-                            depth_map_list.back()->min_depth_all[point->position] < 10E-5)  
+                        if (point->vec(2) > depth_map->max_depth_static[point->position])
                         {
-                            depth_map_list.back()->min_depth_all[point->position] = point->vec(2);
-                            depth_map_list.back()->min_depth_index_all[point->position] = depth_map_list.back()->depth_map[point->position].size()-1;
+                            depth_map->max_depth_static[point->position] = point->vec(2);
                         }
                     }
-                    break;
-                default:    
-                    break;
+                }
             }
             buffer.pop();
         }
@@ -698,28 +743,57 @@ void  DynObjFilter::Buffer2DepthMap(double cur_time)
     }
 }
 
-void  DynObjFilter::SphericalProjection(point_soph &p, int depth_index, const M3D &rot, const V3D &transl, point_soph &p_spherical)
+bool  DynObjFilter::SphericalProjection(point_soph &p, int depth_index, const M3D &rot, const V3D &transl, point_soph &p_spherical)
 {
-    if(fabs(p.last_vecs.at(depth_index%HASH_PRIM)[2]) > 10E-5)
-    {       
-        p_spherical.vec = p.last_vecs.at(depth_index%HASH_PRIM);
-        p_spherical.hor_ind = p.last_positions.at(depth_index%HASH_PRIM)[0];
-        p_spherical.ver_ind = p.last_positions.at(depth_index%HASH_PRIM)[1];
-        p_spherical.position = p.last_positions.at(depth_index%HASH_PRIM)[2];     
-    }
-    else
+    std::size_t cache_slot = 0;
+    if (!m_detector::spatial_index::TryCacheSlot(depth_index, p.last_vecs.size(), &cache_slot))
     {
-        V3D p_proj(rot*(p.glob - transl));
-        p_spherical.GetVec(p_proj, hor_resolution_max, ver_resolution_max);
-        p.last_vecs.at(depth_index%HASH_PRIM) = p_spherical.vec;
-        p.last_positions.at(depth_index%HASH_PRIM)[0] = p_spherical.hor_ind;
-        p.last_positions.at(depth_index%HASH_PRIM)[1] = p_spherical.ver_ind;
-        p.last_positions.at(depth_index%HASH_PRIM)[2] = p_spherical.position;
+        p_spherical.InvalidateProjection();
+        return false;
     }
+
+    const V3F &cached_vec = p.last_vecs.at(cache_slot);
+    if(fabs(cached_vec[2]) > 10E-5)
+    {
+        m_detector::spatial_index::Projection cached_projection;
+        cached_projection.horizontal_angle = cached_vec[0];
+        cached_projection.vertical_angle = cached_vec[1];
+        cached_projection.depth = cached_vec[2];
+        cached_projection.horizontal_index = p.last_positions.at(cache_slot)[0];
+        cached_projection.vertical_index = p.last_positions.at(cache_slot)[1];
+        cached_projection.position = p.last_positions.at(cache_slot)[2];
+        if (!m_detector::spatial_index::IsProjectionValid(
+                cached_projection, MAX_1D, MAX_1D_HALF, MAX_2D_N))
+        {
+            p_spherical.InvalidateProjection();
+            return false;
+        }
+
+        p_spherical.vec = cached_vec;
+        p_spherical.hor_ind = cached_projection.horizontal_index;
+        p_spherical.ver_ind = cached_projection.vertical_index;
+        p_spherical.position = cached_projection.position;
+        return true;
+    }
+
+    const V3D p_proj(rot*(p.glob - transl));
+    if (!p_spherical.GetVec(p_proj, hor_resolution_max, ver_resolution_max))
+    {
+        return false;
+    }
+    p.last_vecs.at(cache_slot) = p_spherical.vec;
+    p.last_positions.at(cache_slot)[0] = p_spherical.hor_ind;
+    p.last_positions.at(cache_slot)[1] = p_spherical.ver_ind;
+    p.last_positions.at(cache_slot)[2] = p_spherical.position;
+    return true;
 }
 
 bool  DynObjFilter::InvalidPointCheck(const V3D &body, const int intensity)
 {
+    if (!body.allFinite())
+    {
+        return true;
+    }
     if ((pow(body(0), 2) + pow(body(1), 2) + pow(body(2), 2)) < blind_dis*blind_dis || (dataset == 1 && fabs(body(0)) < 0.1 && fabs(body(1)) < 1.0) && fabs(body(2)) < 0.1)
     {
         return true;
@@ -752,19 +826,36 @@ bool  DynObjFilter::SelfPointCheck(const V3D &body, const dyn_obj_flg dyn)
 
 bool  DynObjFilter::CheckVerFoV(const point_soph & p, const DepthMap &map_info)
 {
+    if (!m_detector::spatial_index::IsProjectionIndexValid(
+            p.hor_ind, p.ver_ind, p.position, MAX_1D, MAX_1D_HALF, MAX_2D_N) ||
+        !m_detector::spatial_index::IsIndexInRange(pixel_fov_down, MAX_1D_HALF) ||
+        !m_detector::spatial_index::IsIndexInRange(pixel_fov_up, MAX_1D_HALF) ||
+        pixel_fov_down > pixel_fov_up)
+    {
+        return true;
+    }
+
     bool ver_up = false, ver_down = false;
     for(int i = p.ver_ind; i >= pixel_fov_down; i--)
-    {   
-        int cur_pos = p.hor_ind * MAX_1D_HALF + i;
+    {
+        const int cur_pos = p.hor_ind * MAX_1D_HALF + i;
+        if (!m_detector::spatial_index::IsIndexInRange(cur_pos, map_info.depth_map.size()))
+        {
+            return true;
+        }
         if(map_info.depth_map[cur_pos].size() > 0)
         {
             ver_down = true;
             break;
         }
-    } 
+    }
     for(int i = p.ver_ind; i <= pixel_fov_up; i++)
-    {   
-        int cur_pos = p.hor_ind * MAX_1D_HALF + i;
+    {
+        const int cur_pos = p.hor_ind * MAX_1D_HALF + i;
+        if (!m_detector::spatial_index::IsIndexInRange(cur_pos, map_info.depth_map.size()))
+        {
+            return true;
+        }
         if(map_info.depth_map[cur_pos].size() > 0)
         {
             ver_up = true;
@@ -808,9 +899,10 @@ bool  DynObjFilter::Case1(point_soph & p)
     int occluded_map = depth_map_num;
     for (int i = depth_map_num- 1; i >= 0; i--)
     {   
-        SphericalProjection(p, depth_map_list[i]->map_index, depth_map_list[i]->project_R, depth_map_list[i]->project_T, p);
-        if (fabs(p.hor_ind) > MAX_1D || fabs(p.ver_ind) > MAX_1D_HALF || p.vec(2) < 0.0f \
-            || p.position < 0 || p.position >= MAX_2D_N)
+        if (!SphericalProjection(p, depth_map_list[i]->map_index,
+                                 depth_map_list[i]->project_R, depth_map_list[i]->project_T, p) ||
+            !m_detector::spatial_index::IsProjectionIndexValid(
+                p.hor_ind, p.ver_ind, p.position, MAX_1D, MAX_1D_HALF, MAX_2D_N))
         {
             p.dyn = INVALID;
             continue;
@@ -844,6 +936,12 @@ bool  DynObjFilter::Case1(point_soph & p)
 
 bool  DynObjFilter::Case1Enter(const point_soph & p, const DepthMap &map_info)
 {
+    if (!m_detector::spatial_index::IsProjectionIndexValid(
+            p.hor_ind, p.ver_ind, p.position, MAX_1D, MAX_1D_HALF, MAX_2D_N) ||
+        !m_detector::spatial_index::IsIndexInRange(p.position, map_info.depth_map.size()))
+    {
+        return false;
+    }
     float max_depth = 0, min_depth = 0;
     float max_depth_all = 0, min_depth_all = 0;
     if (map_info.depth_map[p.position].size() > 0)
@@ -975,9 +1073,20 @@ bool  DynObjFilter::Case1MapConsistencyCheck(point_soph & p, const DepthMap &map
 
 float DynObjFilter::DepthInterpolationStatic(point_soph & p, int map_index, const DepthMap2D &depth_map)
 {
-    if(fabs(p.last_depth_interps.at(map_index - depth_map_list.front()->map_index)) > 10E-4)
+    if (depth_map_list.empty())
     {
-        float depth_cal = p.last_depth_interps.at(map_index - depth_map_list.front()->map_index);
+        return -2;
+    }
+    std::size_t cache_index = 0;
+    if (!m_detector::spatial_index::TryRelativeIndex(
+            map_index, depth_map_list.front()->map_index,
+            p.last_depth_interps.size(), &cache_index))
+    {
+        return -2;
+    }
+    if(fabs(p.last_depth_interps.at(cache_index)) > 10E-4)
+    {
+        float depth_cal = p.last_depth_interps.at(cache_index);
         return depth_cal;
     }
     V3F p_1 = V3F::Zero();
@@ -1026,7 +1135,7 @@ float DynObjFilter::DepthInterpolationStatic(point_soph & p, int map_index, cons
     }
     if (p_1(2)<10E-5)
     {
-        p.last_depth_interps.at(map_index - depth_map_list.front()->map_index) = -1;
+        p.last_depth_interps.at(cache_index) = -1;
         return -1;
     }
     int cur_size = p_neighbors.size();
@@ -1077,17 +1186,17 @@ float DynObjFilter::DepthInterpolationStatic(point_soph & p, int map_index, cons
             continue;
         }
         float depth_cal = (1-alpha-beta)*p_1(2) + alpha*p_2(2) + beta*p_3(2);
-        p.last_depth_interps.at(map_index - depth_map_list.front()->map_index) = depth_cal;
+        p.last_depth_interps.at(cache_index) = depth_cal;
         return depth_cal;
     }
     if(static_num > 0 && cur_size < all_num/2)
     {
-        p.last_depth_interps.at(map_index - depth_map_list.front()->map_index) = -2;
+        p.last_depth_interps.at(cache_index) = -2;
         return -2;
     }
     else
     {
-        p.last_depth_interps.at(map_index - depth_map_list.front()->map_index) = -2;
+        p.last_depth_interps.at(cache_index) = -2;
         return -2;
     }
 }// return -1 denotes no point, -2 denotes no trianguolar but with points
@@ -1099,9 +1208,12 @@ bool  DynObjFilter::Case2(point_soph & p)
     first_i -= 1;
     if(first_i < 0) return false;
     point_soph p_spherical = p;   
-    SphericalProjection(p, depth_map_list[first_i]->map_index, depth_map_list[first_i]->project_R, depth_map_list[first_i]->project_T, p_spherical);  
-    if (fabs(p_spherical.hor_ind) >= MAX_1D || fabs(p_spherical.ver_ind) >= MAX_1D_HALF || p_spherical.vec(2) < 0.0f || \
-        p_spherical.position < 0 || p_spherical.position >= MAX_2D_N)
+    if (!SphericalProjection(p, depth_map_list[first_i]->map_index,
+                             depth_map_list[first_i]->project_R,
+                             depth_map_list[first_i]->project_T, p_spherical) ||
+        !m_detector::spatial_index::IsProjectionIndexValid(
+            p_spherical.hor_ind, p_spherical.ver_ind, p_spherical.position,
+            MAX_1D, MAX_1D_HALF, MAX_2D_N))
     {
         p.dyn = INVALID;
         return false;
@@ -1151,7 +1263,12 @@ bool  DynObjFilter::Case2(point_soph & p)
                             {                              
                                 if(p1.occu_index[0] == -1 || p1.occu_index[0] < depth_map_list.front()->map_index)
                                 {
-                                    SphericalProjection(p1, depth_map_list[i]->map_index, depth_map_list[i]->project_R, depth_map_list[i]->project_T, p1);
+                                    if (!SphericalProjection(p1, depth_map_list[i]->map_index,
+                                                             depth_map_list[i]->project_R,
+                                                             depth_map_list[i]->project_T, p1))
+                                    {
+                                        break;
+                                    }
                                     if(Case2SearchPointOccludingP(p1, *depth_map_list[i]))
                                     {
                                         p1.occ_vec = p1.vec;
@@ -1161,9 +1278,34 @@ bool  DynObjFilter::Case2(point_soph & p)
                                         break;
                                     }                                   
                                 }                                
-                                i = p1.occu_index[0]-depth_map_list.front()->map_index;
-                                point_soph*  p2 = depth_map_list[i]->depth_map[p1.occu_index[1]][p1.occu_index[2]];                                   
-                                SphericalProjection(p, depth_map_list[i]->map_index, depth_map_list[i]->project_R, depth_map_list[i]->project_T, p);
+                                std::size_t history_map_index = 0;
+                                if (!m_detector::spatial_index::TryRelativeIndex(
+                                        p1.occu_index[0], depth_map_list.front()->map_index,
+                                        depth_map_list.size(), &history_map_index))
+                                {
+                                    break;
+                                }
+                                i = static_cast<int>(history_map_index);
+                                if (!m_detector::spatial_index::IsIndexInRange(
+                                        p1.occu_index[1], depth_map_list[i]->depth_map.size()))
+                                {
+                                    break;
+                                }
+                                const std::vector<point_soph*> &history_pixel =
+                                    depth_map_list[i]->depth_map[p1.occu_index[1]];
+                                if (!m_detector::spatial_index::IsIndexInRange(
+                                        p1.occu_index[2], history_pixel.size()))
+                                {
+                                    break;
+                                }
+                                point_soph* p2 = history_pixel[p1.occu_index[2]];
+                                if (p2 == nullptr ||
+                                    !SphericalProjection(p, depth_map_list[i]->map_index,
+                                                         depth_map_list[i]->project_R,
+                                                         depth_map_list[i]->project_T, p))
+                                {
+                                    break;
+                                }
                                 if(Case2MapConsistencyCheck(p, *depth_map_list[i], case2_interp_en))
                                 {
                                     map_cons = false;
@@ -1210,15 +1352,28 @@ bool  DynObjFilter::Case2(point_soph & p)
 
 bool  DynObjFilter::Case2Enter(point_soph & p, const DepthMap &map_info)
 {
+    if (!m_detector::spatial_index::IsProjectionIndexValid(
+            p.hor_ind, p.ver_ind, p.position, MAX_1D, MAX_1D_HALF, MAX_2D_N) ||
+        !m_detector::spatial_index::IsIndexInRange(p.position, map_info.depth_map.size()))
+    {
+        return false;
+    }
     if(p.dyn != STATIC)
     {
         return false;
     }
     float max_depth = 0;
     float depth_thr2_final = max(cutoff_value, k_depth_max_thr2*(p.vec(2) - d_depth_max_thr2)) + occ_depth_thr2;
-    if(map_info.depth_map[p.position].size() > 0)
+    const std::vector<point_soph*> &pixel = map_info.depth_map[p.position];
+    if(pixel.size() > 0)
     {
-        const point_soph* max_point = map_info.depth_map[p.position][map_info.max_depth_index_all[p.position]];
+        const int max_index = map_info.max_depth_index_all[p.position];
+        if (!m_detector::spatial_index::IsIndexInRange(max_index, pixel.size()) ||
+            pixel[max_index] == nullptr)
+        {
+            return false;
+        }
+        const point_soph* max_point = pixel[max_index];
         max_depth = max_point->vec(2); 
         float delta_t = (p.time - max_point->time);
         depth_thr2_final = min(depth_thr2_final, v_min_thr2*delta_t);
@@ -1516,9 +1671,12 @@ bool  DynObjFilter::Case3(point_soph & p)
     first_i -= 1;
     if(first_i < 0) return false;
     point_soph p_spherical = p;
-    SphericalProjection(p, depth_map_list[first_i]->map_index, depth_map_list[first_i]->project_R, depth_map_list[first_i]->project_T, p_spherical);  
-    if (fabs(p_spherical.hor_ind) >= MAX_1D || fabs(p_spherical.ver_ind) >= MAX_1D_HALF || p_spherical.vec(2) < 0.0f || \
-        p_spherical.position < 0 || p_spherical.position >= MAX_2D_N)
+    if (!SphericalProjection(p, depth_map_list[first_i]->map_index,
+                             depth_map_list[first_i]->project_R,
+                             depth_map_list[first_i]->project_T, p_spherical) ||
+        !m_detector::spatial_index::IsProjectionIndexValid(
+            p_spherical.hor_ind, p_spherical.ver_ind, p_spherical.position,
+            MAX_1D, MAX_1D_HALF, MAX_2D_N))
     {
         p.dyn = INVALID;
         return false;
@@ -1565,7 +1723,12 @@ bool  DynObjFilter::Case3(point_soph & p)
                             {
                                 if(p1.is_occu_index[0] == -1 || p1.is_occu_index[0] < depth_map_list.front()->map_index)
                                 {
-                                    SphericalProjection(p1, depth_map_list[i]->map_index, depth_map_list[i]->project_R, depth_map_list[i]->project_T, p1);
+                                    if (!SphericalProjection(p1, depth_map_list[i]->map_index,
+                                                             depth_map_list[i]->project_R,
+                                                             depth_map_list[i]->project_T, p1))
+                                    {
+                                        break;
+                                    }
                                     if(Case3SearchPointOccludedbyP(p1, *depth_map_list[i]))
                                     {
                                         p1.is_occ_vec = p1.vec;
@@ -1575,9 +1738,34 @@ bool  DynObjFilter::Case3(point_soph & p)
                                         break;
                                     }               
                                 }
-                                i = p1.is_occu_index[0]-depth_map_list.front()->map_index;
-                                point_soph* p2 = depth_map_list[i]->depth_map[p1.is_occu_index[1]][p1.is_occu_index[2]];                        
-                                SphericalProjection(p, depth_map_list[i]->map_index, depth_map_list[i]->project_R, depth_map_list[i]->project_T, p);
+                                std::size_t history_map_index = 0;
+                                if (!m_detector::spatial_index::TryRelativeIndex(
+                                        p1.is_occu_index[0], depth_map_list.front()->map_index,
+                                        depth_map_list.size(), &history_map_index))
+                                {
+                                    break;
+                                }
+                                i = static_cast<int>(history_map_index);
+                                if (!m_detector::spatial_index::IsIndexInRange(
+                                        p1.is_occu_index[1], depth_map_list[i]->depth_map.size()))
+                                {
+                                    break;
+                                }
+                                const std::vector<point_soph*> &history_pixel =
+                                    depth_map_list[i]->depth_map[p1.is_occu_index[1]];
+                                if (!m_detector::spatial_index::IsIndexInRange(
+                                        p1.is_occu_index[2], history_pixel.size()))
+                                {
+                                    break;
+                                }
+                                point_soph* p2 = history_pixel[p1.is_occu_index[2]];
+                                if (p2 == nullptr ||
+                                    !SphericalProjection(p, depth_map_list[i]->map_index,
+                                                         depth_map_list[i]->project_R,
+                                                         depth_map_list[i]->project_T, p))
+                                {
+                                    break;
+                                }
                                 if(Case3MapConsistencyCheck(p, *depth_map_list[i], case3_interp_en))
                                 {
                                     map_cons = false;
@@ -1623,15 +1811,28 @@ bool  DynObjFilter::Case3(point_soph & p)
 
 bool  DynObjFilter::Case3Enter(point_soph & p, const DepthMap &map_info)
 {
+    if (!m_detector::spatial_index::IsProjectionIndexValid(
+            p.hor_ind, p.ver_ind, p.position, MAX_1D, MAX_1D_HALF, MAX_2D_N) ||
+        !m_detector::spatial_index::IsIndexInRange(p.position, map_info.depth_map.size()))
+    {
+        return false;
+    }
     if(p.dyn != STATIC)
     {
         return false;
     }
     float min_depth = 0;
     float depth_thr3_final = max(cutoff_value, k_depth_max_thr3*(p.vec(2) - d_depth_max_thr3)) + occ_depth_thr3;
-    if(map_info.depth_map[p.position].size() > 0)
+    const std::vector<point_soph*> &pixel = map_info.depth_map[p.position];
+    if(pixel.size() > 0)
     {
-        const point_soph* min_point = map_info.depth_map[p.position][map_info.min_depth_index_all[p.position]];
+        const int min_index = map_info.min_depth_index_all[p.position];
+        if (!m_detector::spatial_index::IsIndexInRange(min_index, pixel.size()) ||
+            pixel[min_index] == nullptr)
+        {
+            return false;
+        }
+        const point_soph* min_point = pixel[min_index];
         min_depth = min_point->vec(2); 
         float delta_t = (p.time - min_point->time);
         depth_thr3_final = min(depth_thr3_final, v_min_thr3*delta_t);
