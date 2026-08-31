@@ -238,7 +238,7 @@ void DynObjCluster::PubClusterResult_voxel(std::vector<int> &dyn_tag, std_msgs::
                 {    
                     kk += (k%2 ? 1:-1) * k;
                     int voxel = voxel_center + ii * GridMapedgesize_xy * GridMapedgesize_z + jj * GridMapedgesize_z + kk;
-                    if(voxel < 0 || voxel > GridMapsize) continue;
+                    if(voxel < 0 || voxel >= GridMapsize) continue;
                     XYZExtract(voxel, xyz);
                     Eigen::Vector3f voxel_loc(xyz(0) + 0.5f * Voxel_revolusion, xyz(1) + 0.5f * Voxel_revolusion, xyz(2) + 0.5f * Voxel_revolusion);
                     if (umap[voxel].points_num == 0 && !((voxel_loc(0) > min.x && voxel_loc(0) < max.x) && (voxel_loc(1) > min.y && voxel_loc(1) < max.y) && (voxel_loc(2) > min.z && voxel_loc(2) < max.z)))
@@ -269,7 +269,7 @@ void DynObjCluster::PubClusterResult_voxel(std::vector<int> &dyn_tag, std_msgs::
         if (dyn_tag[ite] == -1)
             continue;
         int voxel = floor((raw_point[ite].x - xyz_origin(0)) / Voxel_revolusion) * GridMapedgesize_xy * GridMapedgesize_z + floor((raw_point[ite].y - xyz_origin(1)) / Voxel_revolusion) * GridMapedgesize_z + floor((raw_point[ite].z - xyz_origin(2)) / Voxel_revolusion);
-        if (voxel < 0 || voxel > GridMapsize)
+        if (voxel < 0 || voxel >= GridMapsize)
         {
             continue;
         }
@@ -714,7 +714,7 @@ void DynObjCluster::event_extend(const Eigen::Matrix3f &R, bool ground_detect,
             for (int ind = 0; ind < 6; ind++)
             {
                 int voxel_neighbor = voxel_cur + x_ind[ind] * GridMapedgesize_xy * GridMapedgesize_z + y_ind[ind] * GridMapedgesize_z + z_ind[ind];
-                if (voxel_neighbor < 0 || voxel_neighbor > GridMapsize)
+                if (voxel_neighbor < 0 || voxel_neighbor >= GridMapsize)
                     continue;
                 if ((umap_insidebox[voxel_neighbor].bbox_index > -1 && umap_insidebox[voxel_neighbor].points_num > 0 && umap_insidebox[voxel_neighbor].bbox_index == bbox_index) || (umap[voxel_neighbor].points_num > 0 && umap[voxel_neighbor].cloud->size() > 0 && umap[voxel_neighbor].bbox_index == bbox_index))
                 {

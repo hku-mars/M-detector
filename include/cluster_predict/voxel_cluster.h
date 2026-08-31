@@ -142,7 +142,7 @@ public:
             tmp.intensity = 0;
             // VOXEL voxel(floor(tmp.x/Voxel_revolusion), floor(tmp.y/Voxel_revolusion), floor(tmp.z/Voxel_revolusion));
             int position = floor((tmp.x - xyz_origin(0))/Voxel_revolusion) * Grid_edge_size_xy * Grid_edge_size_z + floor((tmp.y - xyz_origin(1))/Voxel_revolusion) * Grid_edge_size_z + floor((tmp.z- xyz_origin(2))/Voxel_revolusion);
-            if(position < 0 || position > Grid_edge_size_xy* Grid_edge_size_xy* Grid_edge_size_z) continue;
+            if(position < 0 || position >= Grid_edge_size_xy* Grid_edge_size_xy* Grid_edge_size_z) continue;
             if (umap_in[position].points_num > 0)
             {
                 // umap[voxel].cloud.push_back(tmp);
@@ -172,7 +172,7 @@ public:
             tmp.z = points_.points[i].z;
             tmp.intensity = 0;
             int position = floor((tmp.x - xyz_origin(0))/Voxel_revolusion) * Grid_edge_size_xy * Grid_edge_size_z + floor((tmp.y - xyz_origin(1))/Voxel_revolusion) * Grid_edge_size_z + floor((tmp.z - xyz_origin(2))/Voxel_revolusion);
-            if(position < 0 || position > Grid_edge_size_xy* Grid_edge_size_xy* Grid_edge_size_z) continue;
+            if(position < 0 || position >= Grid_edge_size_xy* Grid_edge_size_xy* Grid_edge_size_z) continue;
             if (umap_in[position].points_num > 0)
             {   
                 umap_in[position].cloud->push_back(tmp);
