@@ -104,3 +104,10 @@ target_link_libraries(cal_recall ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_L
 target_include_directories(cal_recall PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 
+
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(spatial_index_validation_test test/spatial_index_validation_test.cpp)
+  if(TARGET spatial_index_validation_test)
+    target_include_directories(spatial_index_validation_test PRIVATE include)
+  endif()
+endif()

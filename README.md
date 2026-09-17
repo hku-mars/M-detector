@@ -96,7 +96,7 @@ buffer_delay: 0.1                       #the delay duration between the frame-ou
 buffer_size: 100000                     #the saved maximum point numbers in the buffer, usually larger than the point numbers generated during buffer_delay
 points_num_perframe: 30000              #the maximum point numbers LiDAR generated per frame
 depth_map_dur: 0.2                      #the effective durtaion of every depth map 
-max_depth_map_num: 5                    #the maximum depth map numbers in the configuration 
+max_depth_map_num: 5                    #the maximum depth map numbers; supported range: 1-17
 max_pixel_points: 5                     #the saved maximum point numbers in each pixel of the depth map
 frame_dur: 0.1                          #the frame duration of the point cloud input by points_topic
 hor_resolution_max: 0.005               #the horizontal resolution of the depth map (units in radius), usually is 2-4 times of the horizontal resolution of LiDAR

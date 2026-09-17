@@ -3,6 +3,7 @@
 
 #include <omp.h>
 #include <mutex>
+#include <m-detector/spatial_index_validation.h>
 #include <math.h>
 #include <ros/ros.h>
 // #include <so3_math.h>
@@ -78,12 +79,7 @@ struct point_soph
     typedef boost::shared_ptr<point_soph> Ptr;
     point_soph(V3D & point, float & hor_resolution_max, float & ver_resolution_max)
     {
-        vec(2)     = float(point.norm());
-        vec(0)     = atan2f(float(point(1)), float(point(0)));
-        vec(1)     = atan2f(float(point(2)), sqrt(pow(float(point(0)), 2) + pow(float(point(1)), 2)));
-        hor_ind    = floor((vec(0) + PI_MATH) / hor_resolution_max);
-        ver_ind    = floor((vec(1) + 0.5 * PI_MATH) / ver_resolution_max);
-        position   = hor_ind * MAX_1D_HALF + ver_ind;
+        GetVec(point, hor_resolution_max, ver_resolution_max);
         time       = -1;
         occu_times = is_occu_times = 0;
         occu_index = -1*Vector3i::Ones();
@@ -173,14 +169,30 @@ struct point_soph
     ~point_soph(){
     };
 
-    void GetVec(V3D & point, float & hor_resolution_max, float & ver_resolution_max)
+    void InvalidateProjection()
     {
-        vec(2)    = float(point.norm());
-        vec(0)    = atan2f(float(point(1)), float(point(0)));
-        vec(1)    = atan2f(float(point(2)), sqrt(pow(float(point(0)), 2) + pow(float(point(1)), 2)));
-        hor_ind   = floor((vec(0) + PI_MATH) / hor_resolution_max);
-        ver_ind   = floor((vec(1) + 0.5 * PI_MATH) / ver_resolution_max);
-        position  = hor_ind * MAX_1D_HALF + ver_ind;
+        vec.setZero();
+        hor_ind = ver_ind = position = -1;
+    }
+
+    bool GetVec(const V3D & point, const float & hor_resolution_max, const float & ver_resolution_max)
+    {
+        m_detector::spatial_index::Projection projection;
+        if (!m_detector::spatial_index::ProjectCartesian(
+                point(0), point(1), point(2), hor_resolution_max, ver_resolution_max,
+                MAX_1D, MAX_1D_HALF, MAX_2D_N, &projection))
+        {
+            InvalidateProjection();
+            return false;
+        }
+
+        vec(0) = projection.horizontal_angle;
+        vec(1) = projection.vertical_angle;
+        vec(2) = projection.depth;
+        hor_ind = projection.horizontal_index;
+        ver_ind = projection.vertical_index;
+        position = projection.position;
+        return true;
     };
 
     void reset()
@@ -444,7 +456,7 @@ public:
 
     void  Points2Buffer(vector<point_soph*> &points, std::vector<int> &index_vector);
     void  Buffer2DepthMap(double cur_time);
-    void  SphericalProjection(point_soph &p, int depth_index, const M3D &rot, const V3D &transl, point_soph &p_spherical);
+    bool  SphericalProjection(point_soph &p, int depth_index, const M3D &rot, const V3D &transl, point_soph &p_spherical);
     bool  Case1(point_soph & p);
     bool  Case1Enter(const point_soph & p, const DepthMap &map_info);
     bool  Case1FalseRejection(point_soph & p, const DepthMap &map_info);
